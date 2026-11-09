@@ -1,0 +1,10 @@
+.Rhistory
+.RData
+.Rproj.user/
+.Rlib/
+data/raw/
+data/processed/
+outputs/objects/
+outputs/session-info.txt
+*.part
+.DS_Store
