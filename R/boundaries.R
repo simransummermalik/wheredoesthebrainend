@@ -38,9 +38,14 @@ boundary_votes <- function(labels, edges) {
 
 edge_rms <- function(z, edges) {
   # z: spots x held-out genes, standardized separately for each gene.
-  vapply(seq_len(nrow(edges)), function(e) {
-    sqrt(mean((z[edges$i[e], ] - z[edges$j[e], ])^2))
-  }, numeric(1))
+  # Chunking keeps the validation matrix bounded while vectorizing permutations.
+  result <- numeric(nrow(edges))
+  for (start in seq.int(1L, nrow(edges), by = 1000L)) {
+    idx <- seq.int(start, min(nrow(edges), start + 999L))
+    difference <- z[edges$i[idx], , drop = FALSE] - z[edges$j[idx], , drop = FALSE]
+    result[idx] <- sqrt(rowMeans(difference^2))
+  }
+  result
 }
 
 spot_boundary_score <- function(n, edges, scores) {
@@ -105,6 +110,42 @@ adjusted_rand <- function(a, b) {
   upper <- (sum(choose2(rowSums(tab))) + sum(choose2(colSums(tab)))) / 2
   if (abs(upper - expected) < .Machine$double.eps) return(1)
   (sum(choose2(tab)) - expected) / (upper - expected)
+}
+
+qc_matched_contrast <- function(value, boundary, interior, covariates, bins = 3L, min_per_group = 3L) {
+  stopifnot(nrow(covariates) == length(value), all(is.finite(as.matrix(covariates))))
+  candidate <- boundary | interior
+  strata <- lapply(covariates, function(x) {
+    unique_values <- sort(unique(x[candidate]))
+    if (length(unique_values) <= bins) return(match(x, unique_values))
+    breaks <- unique(quantile(x[candidate], seq(0, 1, length.out = bins + 1L)))
+    cut(x, breaks = breaks, include.lowest = TRUE, labels = FALSE)
+  })
+  stratum <- do.call(paste, c(strata, sep = ":"))
+  counts <- aggregate(cbind(boundary = as.integer(boundary), interior = as.integer(interior)),
+    list(stratum = stratum), sum)
+  support <- counts$stratum[counts$boundary >= min_per_group & counts$interior >= min_per_group]
+  keep_b <- boundary & stratum %in% support
+  keep_i <- interior & stratum %in% support
+  if (!any(keep_b) || !any(keep_i)) return(list(
+    summary = data.frame(ratio = NA_real_, boundary_edges = 0L, interior_edges = 0L,
+      supported_strata = 0L, excluded_boundary_edges = sum(boundary)), balance = data.frame()))
+  weights <- counts$boundary / pmax(counts$interior, 1)
+  names(weights) <- counts$stratum
+  w <- weights[stratum[keep_i]]
+  bmean <- mean(value[keep_b])
+  imean <- weighted.mean(value[keep_i], w)
+  balance <- do.call(rbind, lapply(names(covariates), function(name) {
+    x <- covariates[[name]]
+    data.frame(covariate = name, original_boundary_mean = mean(x[boundary]),
+      original_interior_mean = mean(x[interior]),
+      common_support_boundary_mean = mean(x[keep_b]),
+      weighted_interior_mean = weighted.mean(x[keep_i], w))
+  }))
+  list(summary = data.frame(ratio = bmean / imean, boundary_mean = bmean,
+    matched_interior_mean = imean, boundary_edges = sum(keep_b), interior_edges = sum(keep_i),
+    supported_strata = length(support), excluded_boundary_edges = sum(boundary & !keep_b)),
+    balance = balance)
 }
 
 interface_model_cv <- function(coords, baseline, z, hops, pair, max_hops, block_size = 8) {
@@ -191,6 +232,8 @@ interface_profiles <- function(coords, edges, baseline, z, max_hops = 5L, block_
     }
     summaries[[key]] <- data.frame(interface = key, crossing_edges = length(groups[[key]]),
       spots = nrow(df), interface_jump = jump,
+      mean_stability = if ("stability" %in% names(edges)) mean(edges$stability[groups[[key]]]) else NA_real_,
+      mean_heldout_change = if ("heldout_rms" %in% names(edges)) mean(edges$heldout_rms[groups[[key]]]) else NA_real_,
       jump_fraction = if (total_change > 0) jump / total_change else NA_real_,
       cv_flat_mse = unname(cv["flat"]), cv_step_mse = unname(cv["step"]),
       cv_linear_mse = unname(cv["linear"]), model_preference = preference)

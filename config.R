@@ -22,6 +22,5 @@ config <- list(
   block_size = 8L, # Visium array rows; x is array_col / 2
   bootstrap_reps = 500L,
   permutation_reps = 499L,
-  transect_min_spots = 30L,
   out_dir = "outputs"
 )

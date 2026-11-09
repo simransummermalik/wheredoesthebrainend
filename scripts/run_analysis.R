@@ -13,7 +13,6 @@ options(future.globals.maxSize = 4 * 1024^3)
 for (dir in c("tables", "figures", "objects")) {
   dir.create(file.path(config$out_dir, dir), recursive = TRUE, showWarnings = FALSE)
 }
-dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
 table_path <- function(name) file.path(config$out_dir, "tables", paste0(name, ".csv"))
 save_table <- function(x, name) write.csv(x, table_path(name), row.names = FALSE)
 
@@ -41,6 +40,9 @@ meta <- qc[qc$keep, c("nCount", "nFeature", "percent_mt")]
 rownames(meta) <- coords$barcode
 brain <- CreateSeuratObject(counts, assay = "Spatial", meta.data = meta,
   min.cells = config$min_gene_spots, project = "WhereDoesTheBrainEnd")
+image <- Seurat::Read10X_Image(file.path(config$raw_dir, "spatial"),
+  assay = "Spatial", slice = "anterior1", filter.matrix = TRUE)
+brain[["anterior1"]] <- image[colnames(brain)]
 
 message("2/7 Splitting genes before feature selection; normalizing and fitting PCA")
 # Exclude mitochondrial/ribosomal genes from BOTH feature sets, but retain their QC metrics.
@@ -89,7 +91,15 @@ grid$ari_to_baseline <- apply(labels, 2, function(x) adjusted_rand(baseline, x))
 save_table(grid, "clustering_runs")
 save_table(data.frame(barcode = rownames(labels), labels, check.names = FALSE), "cluster_assignments")
 votes <- boundary_votes(labels, edges)
+baseline_boundary <- votes[, baseline_idx]
+grid$boundary_jaccard_to_baseline <- vapply(seq_len(ncol(votes)), function(k) {
+  union <- sum(votes[, k] | baseline_boundary)
+  if (union == 0) 1 else sum(votes[, k] & baseline_boundary) / union
+}, numeric(1))
+save_table(grid, "clustering_runs")
 edges$stability <- rowMeans(votes)
+edges$pc_stability_at_baseline_resolution <- rowMeans(votes[, grid$resolution == config$baseline_resolution, drop = FALSE])
+edges$resolution_stability_at_baseline_pcs <- rowMeans(votes[, grid$pcs == config$baseline_pcs, drop = FALSE])
 edges$baseline_crossing <- baseline[edges$i] != baseline[edges$j]
 edges$stable_boundary <- edges$stability >= config$stable_threshold
 edges$stable_interior <- edges$stability <= config$interior_threshold
@@ -127,6 +137,14 @@ save_table(gene_contrasts, "heldout_gene_contrasts")
 # Technical discontinuities may coincide with expression discontinuities.
 edges$abs_log_depth_change <- abs(log1p(meta$nCount[edges$i]) - log1p(meta$nCount[edges$j]))
 edges$abs_mt_change <- abs(meta$percent_mt[edges$i] - meta$percent_mt[edges$j])
+matching <- qc_matched_contrast(edges$heldout_rms, edges$stable_boundary,
+  edges$stable_interior, data.frame(
+    mean_log_depth = (log1p(meta$nCount[edges$i]) + log1p(meta$nCount[edges$j])) / 2,
+    abs_log_depth_change = edges$abs_log_depth_change,
+    mean_percent_mt = (meta$percent_mt[edges$i] + meta$percent_mt[edges$j]) / 2,
+    abs_mt_change = edges$abs_mt_change))
+save_table(matching$summary, "qc_matched_contrast")
+save_table(matching$balance, "qc_matching_balance")
 save_table(edges, "spatial_edges")
 coords$baseline_cluster <- baseline
 coords$boundary_score <- spot_boundary_score(nrow(coords), edges, edges$stability)
@@ -149,14 +167,16 @@ save_table(data.frame(observed = null$observed, null_mean = mean(null$null),
   p_lower = null$p_lower, permutations = length(null$null)), "global_spatial_null")
 save_table(data.frame(iteration = seq_along(null$null), mean_neighbor_distance = null$null), "spatial_null_draws")
 message("7/7 Saving figures, analysis objects, provenance, and the Markdown report")
-plot_analysis(coords, edges, labels, baseline, z, profiles, null, qc, config$raw_dir, config$out_dir)
+plot_analysis(coords, edges, labels, baseline, z, profiles, null, qc, config$raw_dir,
+  config$out_dir, gene_contrasts)
 brain$baseline_cluster <- baseline
 brain$boundary_score <- coords$boundary_score
 saveRDS(brain, file.path(config$out_dir, "objects/brain.rds"))
 saveRDS(list(config = config, coords = coords, edges = edges, runs = grid,
   profiles = profiles, effect = effect, null = null), file.path(config$out_dir, "objects/results.rds"))
 writeLines(capture.output(sessionInfo()), file.path(config$out_dir, "session-info.txt"))
-save_table(data.frame(package = needed, version = vapply(needed,
+used_packages <- sort(unique(c(needed, loadedNamespaces())))
+save_table(data.frame(package = used_packages, version = vapply(used_packages,
   function(p) as.character(packageVersion(p)), character(1))), "package_versions")
-write_report(config, qc, coords, edges, grid, profiles, effect, null, qc_cor, gene_contrasts)
+write_report(config, qc, coords, edges, grid, profiles, effect, null, qc_cor, gene_contrasts, matching)
 message("Done. Open outputs/report.md and outputs/figures/.")

@@ -17,7 +17,7 @@ draw_tissue <- function(coords, raw_dir, title = "") {
 }
 
 plot_analysis <- function(coords, edges, labels, baseline, z, profiles, null, qc,
-                          raw_dir, out_dir) {
+                          raw_dir, out_dir, gene_contrasts) {
   fig <- file.path(out_dir, "figures")
   dir.create(fig, recursive = TRUE, showWarnings = FALSE)
   palette <- grDevices::hcl.colors(100, "Inferno")
@@ -83,9 +83,11 @@ plot_analysis <- function(coords, edges, labels, baseline, z, profiles, null, qc
       for (key in selected) {
         d <- groups[[key]]
         bins <- aggregate(expression_score ~ signed_hops, d, mean)
+        result <- profiles$summary[profiles$summary$interface == key, ]
         plot(bins$signed_hops, bins$expression_score, type = "b", pch = 16,
           col = "#28766f", xlab = "Signed distance (graph hops + 0.5)",
           ylab = "Held-out expression axis", main = paste("Clusters", key))
+        mtext(result$model_preference, side = 3, line = 0.1, cex = 0.75)
         abline(v = 0, lty = 2, col = "#bd4e3e")
       }
     }, width = 2200, height = 1400)
@@ -98,4 +100,15 @@ plot_analysis <- function(coords, edges, labels, baseline, z, profiles, null, qc
     abline(v = null$observed, lwd = 3, col = "#b34539")
     legend("topleft", "Observed tissue", col = "#b34539", lwd = 3, bty = "n")
   })
+  save_png(file.path(fig, "08_heldout_genes.png"), function() {
+    par(mfrow = c(2, 3), mar = c(1, 1, 3, 1))
+    for (gene in head(gene_contrasts$gene, 6)) {
+      draw_tissue(coords, raw_dir, gene)
+      value <- z[, gene]
+      limits <- quantile(value, c(0.02, 0.98))
+      color <- map_color(pmax(0, pmin(1, (value - limits[1]) / max(diff(limits), 1e-10))))
+      points(coords$pxl_col, coords$pxl_row, pch = 16, cex = 0.35, col = color)
+      mtext("Within-gene expression; 2nd-98th percentile color scale", side = 3, line = 0.1, cex = 0.5)
+    }
+  }, width = 2200, height = 1500)
 }
