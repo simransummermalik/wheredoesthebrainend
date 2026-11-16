@@ -17,6 +17,7 @@ Rscript scripts/setup.R
 Rscript scripts/download_data.R
 Rscript scripts/check.R
 Rscript scripts/run_analysis.R
+Rscript -e 'knitr::knit("term_project.Rmd", output = "term_project.md")'
 ```
 
 These commands invoke R; all downloading, computation, plotting, and report generation is written in R. There is no Python component. You can instead run each script with `source("scripts/setup.R")`, etc. in an R session, in the same order.
@@ -26,6 +27,8 @@ Use a recent R version compatible with Seurat (R 4.4+ recommended). Setup instal
 Start reading at **[outputs/report.md](outputs/report.md)** after a successful run. Every result in that report comes from the real downloaded dataset. It is generated directly by R and can be read as Markdown without Pandoc or a document-rendering service.
 
 After editing the report narrative in `R/report.R`, run `Rscript scripts/render_report.R` to regenerate the report from saved results without rerunning clustering.
+
+The assignment submission files are `term_project.Rmd`, `term_project.md`, and `critique.md`. The Markdown report references the figures in `outputs/figures/`; include that folder if the learning platform does not preserve repository-relative files.
 
 ## Outputs
 
