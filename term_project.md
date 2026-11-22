@@ -1,9 +1,14 @@
 ---
 title: "Where Does the Brain End?"
 subtitle: "Stable molecular borders and gradual transitions in a mouse brain section"
-author: ""
-date: "2026-11-16"
+author: "Summer Malik"
 output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    css: term_project.css
   md_document:
     variant: gfm
     preserve_yaml: true
@@ -11,7 +16,7 @@ output:
 
 
 
-## Abstract
+# Abstract
 
 For this project, I looked at whether boundaries between brain regions stay in the same place when I change the clustering settings, and whether gene expression changes sharply or gradually across them. I used the 10x Genomics Mouse Brain Serial Section 1 (Sagittal-Anterior) dataset and Seurat. I ran 18 clustering versions with different numbers of PCs, resolutions, and random seeds. Then I checked the boundaries using genes that were not used to make the clusters.
 
@@ -19,19 +24,19 @@ I kept 2672 spots and found 927 edges that were consistently separated across ru
 
 Before I accounted for spot quality, expression changes at stable boundaries were 1.182 times higher than at stable interiors. After matching edges with similar depth and mitochondrial percentage, the ratio was 1.033. The difference got smaller, so spot quality may explain part of the original result.
 
-## Research question and motivation
+# Research question and motivation
 
 For my project, I want to investigate whether the boundaries between different brain regions are as distinct at the molecular level as they appear anatomically. Two neighboring regions might look similar under a microscope but have very different gene expression, or regions we think of as separate might gradually transition into one another. This matters to me because the way we divide biological structures into regions may not always match what is happening at the molecular level.
 
 I use the 10x mouse brain spatial transcriptomics data and Seurat to find gene expression patterns and map them to their positions in the tissue. I also connect neighboring spots in a graph so I can measure how expression changes across different areas. For this draft, I compared clustering results across settings, then checked whether the boundaries that kept showing up looked sharp or gradual. The question I am working on is: which boundaries stay in similar places when I change the settings, and what does expression do across them?
 
-## Dataset and scope
+# Dataset and scope
 
 The dataset is [10x Genomics Mouse Brain Serial Section 1 (Sagittal-Anterior)](https://www.10xgenomics.com/datasets/mouse-brain-serial-section-1-sagittal-anterior-1-standard-1-1-0). It is one sagittal-anterior section from an adult male C57BL/6 mouse, analyzed with Space Ranger 1.1.0. The download includes gene counts, spot coordinates, a tissue image, and scale factors. The source dataset is licensed CC BY 4.0.
 
 The data are spots, not single cells, and each spot can contain several cells. The cluster numbers are labels from the expression analysis, not confirmed names for brain regions. Since this is one section from one mouse, I also cannot make a population-level claim from it.
 
-## Analysis workflow in R
+# Analysis workflow in R
 
 The full workflow is in `scripts/run_analysis.R`. These are the commands I used to set up and run the project:
 
@@ -57,7 +62,7 @@ The main choices I made were:
 
 I followed the general Seurat spatial workflow from the [Seurat spatial analysis documentation](https://satijalab.org/seurat/articles/spatial_vignette.html). Everything in this project is implemented in R.
 
-## Quality control
+# Quality control
 
 Of 2695 tissue spots, 2672 were retained and 23 were removed. The retained graph contains 7709 spatial edges.
 
@@ -65,9 +70,9 @@ Of 2695 tissue spots, 2672 were retained and 23 were removed. The retained graph
 
 I kept the filters fairly permissive because low counts can reflect the tissue as well as poor quality. The individual keep/remove decisions are in `outputs/tables/spot_qc.csv`.
 
-## Results
+# Results
 
-### Clustering sensitivity
+## Clustering sensitivity
 
 The number of clusters ranged from 10 to 18. The baseline was 25 PCs, resolution 0.6, and seed 925. Adjusted Rand index compares spot partitions without depending on cluster numbering; boundary Jaccard compares the physical edges cut by each run with the baseline.
 
@@ -99,7 +104,7 @@ The number of clusters ranged from 10 to 18. The baseline was 25 PCs, resolution
 
 These numbers show how sensitive my results are to the settings I tried. They are not probabilities that a real anatomical boundary exists.
 
-### Stable and unstable spatial interfaces
+## Stable and unstable spatial interfaces
 
 927 of 7709 edges (12.0%) met the stable-boundary threshold, while 5621 met the stable-interior threshold.
 
@@ -107,7 +112,7 @@ These numbers show how sensitive my results are to the settings I tried. They ar
 
 I called an edge stable when its two neighboring spots were separated in most of the runs. This tells me how reproducible the computational boundary is. It does not prove that the edge is a biological boundary.
 
-### Held-out expression changes
+## Held-out expression changes
 
 Stable boundary edges had 1.182 times the average held-out expression change of stable interior edges. The spatial block bootstrap interval was [1.117, 1.237]. This only describes uncertainty within this one section. It is not a confidence interval across mice.
 
@@ -135,7 +140,7 @@ The highest descriptive gene ratios were:
 
 Snap25 and Ndrg4 stood out as possible follow-up genes because they are connected to nervous-system or neuronal functions. I would need more evidence before using them to name a brain region or explain why a boundary exists.
 
-### Step-like versus gradient-like interfaces
+## Step-like versus gradient-like interfaces
 
 For each cluster pair with enough spots, I measured graph distance moving away from the interface on both sides. I made an expression score from the held-out genes and compared three simple models: no change, a step, and a straight-line trend. I called a profile step-like or gradient-like only when its prediction error was at least 5% lower than the other two models. Otherwise I left it unresolved.
 
@@ -174,7 +179,7 @@ Cluster pair 5/9 is the clearest example of what I was looking for. Its mean sep
 
 This does not prove that cells change continuously. Some profiles can combine separate pieces of the same cluster boundary. Mixed-cell spots, curved boundaries, and nearby domains can also affect the fits. The graph hops are not exact micrometer distances.
 
-### Overall spatial organization
+## Overall spatial organization
 
 The observed mean neighboring distance in the first 10 held-out PCs was 2.463, compared with a position-shuffled null mean of 6.793. The lower-tail Monte Carlo p-value was 0.0020 using 499 permutations.
 
@@ -182,19 +187,19 @@ The observed mean neighboring distance in the first 10 held-out PCs was 2.463, c
 
 This checks whether the data are more spatially organized than they would be after shuffling expression profiles across the tissue. It does not test the significance of one particular boundary or show that a boundary matches anatomy.
 
-### Quality-matched sensitivity analysis
+## Quality-matched sensitivity analysis
 
 Held-out expression change was related to absolute log-depth change (0.388) and absolute mitochondrial-percentage change (0.206). Because of that, I did an extra comparison that grouped edges with similar depth and mitochondrial values before comparing boundaries and interiors.
 
 The matched ratio was 1.033, compared with 1.182 before matching. This made the original contrast look weaker. The matching is rough and descriptive, so it does not remove every technical effect or prove causality.
 
-## Conclusion
+# Conclusion
 
 Many interfaces stayed in similar places across the clustering settings I tried. Some of those stable interfaces still had gradual expression changes instead of sharp jumps. The boundary-to-interior difference also got smaller after I matched edges on depth and mitochondrial percentage, so spot quality may explain part of the original difference.
 
 I still cannot say exactly where named anatomical regions begin or end. I would need atlas registration or independent histology annotations, and ideally more sections or animals.
 
-## Critique of this first draft
+# Critique of this first draft
 
 This draft has more than one cluster map: I compare different settings, check a separate set of genes, and keep each spot's location in the analysis. The result I want to look at more closely is that a boundary can stay in the same place across runs even when expression changes gradually across it.
 
@@ -204,7 +209,7 @@ For the next version, I want to compare the spots with a mouse-brain atlas or hi
 
 I want to ask in class: Is one section enough for this draft, or should I add more now? Should I register the data to an atlas before I compare the results with anatomy? Are the held-out genes and block bootstrap enough for this project, or should I add a spatial regression model? For Option 4, does the research question need a new method, or is it okay to use existing methods to investigate it in a new way?
 
-## Reproducibility
+# Reproducibility
 
 The `.Rmd` source is `term_project.Rmd`. The full workflow is in `scripts/run_analysis.R`, with helper functions in `R/boundaries.R` and `R/plotting.R`. Run the following from the project root:
 
