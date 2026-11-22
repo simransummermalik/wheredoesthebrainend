@@ -13,19 +13,17 @@ output:
 
 ## Abstract
 
-In this first draft, I wanted to see whether the boundaries I find in a mouse brain spatial transcriptomics section stay in the same places when I change the clustering settings. I also wanted to see whether those boundaries look sharp or more gradual. I used the 10x Genomics Mouse Brain Serial Section 1 (Sagittal-Anterior) dataset, Seurat, and an R graph connecting neighboring Visium spots. I ran 18 clustering versions with different numbers of PCs, resolutions, and random seeds. Then I checked expression changes using genes that were not used to make the clusters.
+For this project, I looked at whether boundaries between brain regions stay in the same place when I change the clustering settings, and whether gene expression changes sharply or gradually across them. I used the 10x Genomics Mouse Brain Serial Section 1 (Sagittal-Anterior) dataset and Seurat. I ran 18 clustering versions with different numbers of PCs, resolutions, and random seeds. Then I checked the boundaries using genes that were not used to make the clusters.
 
-I kept 2672 spots and found 927 edges that were consistently separated across runs. 8 interfaces looked step-like, 3 looked more gradual, and 7 did not clearly fit either one. The result I found most interesting was cluster pair 5/9. It had high separation stability (0.960) but its expression pattern looked more like a gradient. In other words, a boundary can keep showing up in the cluster map even when the underlying change is gradual.
+I kept 2672 spots and found 927 edges that were consistently separated across runs. 8 interfaces looked step-like, 3 looked more gradual, and 7 did not clearly fit either one. Cluster pair 5/9 stood out to me. Its boundary showed up consistently (0.960 mean stability), but its expression pattern looked more like a gradient. So the cluster map kept showing this boundary even though expression changed gradually across it.
 
-Before checking quality variables, expression changes were 1.182 times higher at stable boundaries than stable interiors. After I matched edges more closely on depth and mitochondrial percentage, the ratio was 1.033. This made me less confident that the first difference was only biological.
+Before I accounted for spot quality, expression changes at stable boundaries were 1.182 times higher than at stable interiors. After matching edges with similar depth and mitochondrial percentage, the ratio was 1.033. The difference got smaller, so spot quality may explain part of the original result.
 
 ## Research question and motivation
 
-My question is: which molecular interfaces stay separated when I change the clustering settings, and do the expression profiles across them look like abrupt steps or gradual changes at Visium spot resolution?
+For my project, I want to investigate whether the boundaries between different brain regions are as distinct at the molecular level as they appear anatomically. Two neighboring regions might look similar under a microscope but have very different gene expression, or regions we think of as separate might gradually transition into one another. This matters to me because the way we divide biological structures into regions may not always match what is happening at the molecular level.
 
-My starting idea was that some brain regions would have clear molecular breaks, while others would blend into each other. A border that changes a lot when I change the settings is probably not something I should treat as a strong result. A stable border still needs more checking before I call it a real anatomical boundary.
-
-What I am adding to the usual cluster map is a boundary check. I look at whether a boundary stays in the same place, whether other genes also change there, and whether the change looks more like a step or a gradient. I am not claiming that boundary detection itself is a new method. My goal is to apply these checks clearly to this mouse brain section.
+I use the 10x mouse brain spatial transcriptomics data and Seurat to find gene expression patterns and map them to their positions in the tissue. I also connect neighboring spots in a graph so I can measure how expression changes across different areas. For this draft, I compared clustering results across settings, then checked whether the boundaries that kept showing up looked sharp or gradual. The question I am working on is: which boundaries stay in similar places when I change the settings, and what does expression do across them?
 
 ## Dataset and scope
 
@@ -192,19 +190,19 @@ The matched ratio was 1.033, compared with 1.182 before matching. This made the 
 
 ## Conclusion
 
-So far, I would describe the results this way. Many interfaces stay in roughly the same places across my clustering settings. Some stable interfaces still look gradual instead of like sharp jumps. Also, some of the original boundary/interior expression difference seems related to measured quality variables.
+Many interfaces stayed in similar places across the clustering settings I tried. Some of those stable interfaces still had gradual expression changes instead of sharp jumps. The boundary-to-interior difference also got smaller after I matched edges on depth and mitochondrial percentage, so spot quality may explain part of the original difference.
 
 I still cannot say exactly where named anatomical regions begin or end. I would need atlas registration or independent histology annotations, and ideally more sections or animals.
 
 ## Critique of this first draft
 
-The strongest part of my draft is that I am not only showing one cluster picture. I compare different settings, check genes that were not used to make the clusters, and keep the physical location of each spot in the analysis. The figures make the main result fairly easy to see: a boundary can be stable without being a sharp expression jump.
+This draft has more than one cluster map: I compare different settings, check a separate set of genes, and keep each spot's location in the analysis. The result I want to look at more closely is that a boundary can stay in the same place across runs even when expression changes gradually across it.
 
-The biggest weakness is the dataset itself. It is one section from one mouse, and each spot can contain multiple cells. I cannot make a population-level claim or estimate a true cell-level transition width from this. I also added the quality-matched comparison after I noticed the quality associations, so it is a follow-up sensitivity check, not something I planned before looking at the data. The step-versus-gradient comparison is simple, and some profiles may combine disconnected pieces of a boundary.
+I only used one section from one mouse, and each spot can contain several cells. That means I can't tell yet whether the same interfaces show up in other mice or how wide a transition is at the cell level. I also added the quality-matched comparison after I saw that expression change was related to depth and mitochondrial percentage, so I need to treat that result as an extra check. Some of the profiles may also combine separate pieces of the same boundary.
 
-For the next version, I want to register the spots to a mouse-brain atlas or use blinded histology annotations. I also want to repeat the analysis on more 10x sections and add a spatial model that accounts for depth and mitochondrial percentage. I would analyze connected pieces of a boundary separately instead of pooling them, and I would like a more formal way to compare the step and gradient models. I also want to check the top genes against known cell-type markers before trying to interpret them.
+For the next version, I want to compare the spots with a mouse-brain atlas or histology annotations and run the analysis on more sections. I want to look at separate connected pieces of a boundary and check the top genes against known cell-type markers. I would also like to improve the comparison between the step and gradient models and account for depth and mitochondrial percentage in a spatial model.
 
-The questions I would bring to the next class are: Is one tissue section okay for this first draft, or should I add multiple serial sections now? Do I need atlas or histology registration before calling something an anatomical boundary? Is the block bootstrap and held-out check enough for this class, or should I add a formal spatial regression model? How original does the method need to be for Option 4 if the project is mainly a careful analysis of an existing dataset?
+I want to ask in class: Is one section enough for this draft, or should I add more now? Should I register the data to an atlas before I compare the results with anatomy? Are the held-out genes and block bootstrap enough for this project, or should I add a spatial regression model? For Option 4, does the research question need a new method, or is it okay to use existing methods to investigate it in a new way?
 
 ## Reproducibility
 

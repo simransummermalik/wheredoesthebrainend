@@ -1,14 +1,14 @@
 # Critique of the first draft
 
-The strongest part of my draft is that I am not only showing one cluster picture. I compare different settings, check genes that were not used to make the clusters, and keep the physical location of each spot in the analysis. The figures make the main result easy to see: a boundary can be stable in clustering while the expression change across it is gradual.
+This draft has more than one cluster map: I compare different settings, check a separate set of genes, and keep each spot's location in the analysis. The result I want to look at more closely is that a boundary can stay in the same place across runs even when expression changes gradually across it.
 
-The biggest weakness is the dataset itself. It is one section from one mouse, and each spot can contain multiple cells. I cannot make a population-level claim or estimate a true cell-level transition width from this. I added the quality-matched comparison after noticing the quality associations, so it is a follow-up sensitivity check rather than something I planned before seeing the results. The step-versus-gradient comparison is simple, and some profiles may combine disconnected pieces of a boundary.
+I only used one section from one mouse, and each spot can contain several cells. That means I can't tell yet whether the same interfaces show up in other mice or how wide a transition is at the cell level. I also added the quality-matched comparison after I saw that expression change was related to depth and mitochondrial percentage, so I need to treat that result as an extra check. Some of the profiles may also combine separate pieces of the same boundary.
 
-For the next version, I want to register the spots to a mouse-brain atlas or use blinded histology annotations. I also want to repeat the analysis on more 10x sections and add a spatial model that accounts for depth and mitochondrial percentage. I would analyze connected pieces of a boundary separately instead of pooling them, and I would like a more formal way to compare the step and gradient models. I also want to check the top genes against known cell-type markers before trying to interpret them.
+For the next version, I want to compare the spots with a mouse-brain atlas or histology annotations and run the analysis on more sections. I want to look at separate connected pieces of a boundary and check the top genes against known cell-type markers. I would also like to improve the comparison between the step and gradient models and account for depth and mitochondrial percentage in a spatial model.
 
-The questions I would bring to the next class are:
+I want to ask in class:
 
-- Is one tissue section okay for this first draft, or should I add multiple serial sections now?
-- Do I need atlas or histology registration before calling something an anatomical boundary?
-- Is the block bootstrap and held-out check enough for this class, or should I add a formal spatial regression model?
-- How original does the method need to be for Option 4 if the project is mainly a careful analysis of an existing dataset?
+- Is one section enough for this draft, or should I add more now?
+- Should I register the data to an atlas before I compare the results with anatomy?
+- Are the held-out genes and block bootstrap enough for this project, or should I add a spatial regression model?
+- For Option 4, does the research question need a new method, or is it okay to use existing methods to investigate it in a new way?
